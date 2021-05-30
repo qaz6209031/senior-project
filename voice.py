@@ -5,11 +5,13 @@ from aiy.cloudspeech import CloudSpeechClient
 from data import getData
 
 def main():
+    print('Retrieving the data')
     data = getData()
+    print('Data loaded')
     # response = customerOrderTime(data, 'ascendo los osos', 'today')
     # response = makeOrderTime(data, 'blueberry muffin', 'today')
     # response = whoGetOrderTime(data, '6', 'baguette', 'today')
-    response = getQuantityOrderTime(data, 'dutch stick', 'bpb extras', 'today')
+
     client = CloudSpeechClient()
     with Board() as board:
         while True:
@@ -21,6 +23,8 @@ def main():
             print('You said', text)
             text = text.lower()
             if 'repeat after me' in text:
+                aiy.voice.tts.say('Getting the data, please wait')
+                response = getQuantityOrderTime(data, 'dutch stick', 'bpb extras', 'today')
                 aiy.voice.tts.say(response)
             elif 'goodbye' in text:
                 break
@@ -32,12 +36,12 @@ def customerOrderTime(df, customer, time):
     filter = (df['Dayref'] == time) & (df['Customer'] == customer)
     table = df.loc[filter]
     print(table)
-    
+
     # Construct reponse
     response = ''
     for ind in table.index:
         response += table['Quantity'][ind] + ' ' + table['Product'][ind] + ' '
-   
+
     if not response:
         response = 'nothing '
     response = customer + ' gets ' + response + time
