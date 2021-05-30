@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import sys
 from bs4 import BeautifulSoup
+import numpy as np
+import re
 
 
 DATA_SOURCE = 'https://bit.ly/3wGaAA0'
@@ -23,9 +25,14 @@ def getData():
       date = datas[0].text
       quantity = datas[2].text
       route = datas[6].text.lower()
-      product = datas[7].text.lower()
+      raw_product = datas[7].text.lower()
+      # Remove the text inside of paranthesis 
+      product = re.sub(r"\([^()]*\)", "", raw_product).strip()
       customer = datas[8].text.lower()
       dayref = datas[11].text.lower()
+
+      if dayref == '#n/a':
+         dayref = np.nan
 
       db.append([date, quantity, route, product, customer, dayref])
 

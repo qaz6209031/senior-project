@@ -3,6 +3,7 @@
 # from aiy.cloudspeech import CloudSpeechClient
 
 from data import getData
+from logic import *
 def main():
     data = getData()
     print(data)
