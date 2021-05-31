@@ -1,33 +1,33 @@
-import aiy.voice.tts
-from aiy.board import Board
-from aiy.cloudspeech import CloudSpeechClient
+# import aiy.voice.tts
+# from aiy.board import Board
+# from aiy.cloudspeech import CloudSpeechClient
 
-from data import getData
+from data import getDataAndHint
 
 def main():
     print('Retrieving the data')
-    data = getData()
+    data, hints = getDataAndHint()
     print('Data loaded')
+    
     # response = customerOrderTime(data, 'ascendo los osos', 'today')
     # response = makeOrderTime(data, 'blueberry muffin', 'today')
     # response = whoGetOrderTime(data, '6', 'baguette', 'today')
+    # response = getQuantityOrderTime(data, 'dutch stick', 'bpb extras', 'today')
 
-    client = CloudSpeechClient()
-    with Board() as board:
-        while True:
-            print('Say something or repeat after me or bye')
-            text = client.recognize()
-            if text is None:
-                print('You said nothing.')
-                continue
-            print('You said', text)
-            text = text.lower()
-            if 'repeat after me' in text:
-                aiy.voice.tts.say('Getting the data, please wait')
-                response = getQuantityOrderTime(data, 'dutch stick', 'bpb extras', 'today')
-                aiy.voice.tts.say(response)
-            elif 'goodbye' in text:
-                break
+    # client = CloudSpeechClient()
+    # with Board() as board:
+    #     while True:
+    #         print('Say something or repeat after me or bye')
+    #         text = client.recognize(hint_phrases=hints)
+    #         if text is None:
+    #             print('You said nothing.')
+    #             continue
+    #         print('You said', text)
+    #         text = text.lower()
+    #         if 'repeat after me' in text:
+    #             aiy.voice.tts.say('Hello World')
+    #         elif 'goodbye' in text:
+    #             break
 
 # Sample question: What is Sandos order for tomorrow?
 # Sample answer: "Sandos gets 30 mini dutch, 12 french sticks, and 2 bags of brioche buns tomorrow"
@@ -95,5 +95,6 @@ def getQuantityOrderTime(df, product, customer, time):
         # Get the first element of series 
         response = customer + ' gets ' + table['Quantity'].iloc[0]  + ' ' + product + ' ' + time
     return response
+
 if __name__ == '__main__':
     main()

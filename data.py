@@ -9,8 +9,8 @@ import re
 
 DATA_SOURCE = 'https://bit.ly/3wGaAA0'
 
-def getData():
-   db = []
+def getDataAndHint():
+   db, hints = [], set()
    try:
       page = requests.get(DATA_SOURCE)
    except requests.exceptions.RequestException as err:
@@ -33,10 +33,12 @@ def getData():
 
       if dayref == '#n/a':
          dayref = np.nan
+      
+      hints.update([route, product, customer])
 
       db.append([date, quantity, route, product, customer, dayref])
 
    headers = ['Date', 'Quantity', 'Route', 'Product', 'Customer', 'Dayref']
    df = pd.DataFrame(db, columns = headers)
 
-   return df
+   return df, hints 
