@@ -21,7 +21,7 @@ def main():
                 break
             query = text.lower()
             query = normalizedQuery(query)
-            print('Query is', text)
+            print('Query is', query)
             print('Genrating response...')
             response = classifyQuery(query, data, customers, products)
             print('Response', response)
@@ -33,7 +33,6 @@ def customerOrderTime(df, customer, time):
     # Get the result based on customer and time
     filter = (df['Dayref'] == time) & (df['Customer'] == customer)
     table = df.loc[filter]
-    print(table)
 
     # Construct reponse
     response = ''
