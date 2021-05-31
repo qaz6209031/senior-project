@@ -6,7 +6,7 @@ from data import getDataAndHint
 
 def main():
     print('Retrieving the data')
-    data, hints = getDataAndHint()
+    data, hints, customers, products = getDataAndHint()
     print('Data loaded')
     
     # response = customerOrderTime(data, 'ascendo los osos', 'today')
@@ -22,12 +22,14 @@ def main():
     #         if text is None:
     #             print('You said nothing.')
     #             continue
-    #         print('You said', text)
-    #         text = text.lower()
-    #         if 'repeat after me' in text:
-    #             aiy.voice.tts.say('Hello World')
-    #         elif 'goodbye' in text:
+    #         if 'goodbye' in text:
     #             break
+    #         print('You said', text)
+    #         query = text.lower()
+    #         print('Genrating response...')
+    #         response = classifyQuery(query, data, customers, products)
+    #         print('Response', response)
+    #         aiy.voice.tts.say(response)
 
 # Sample question: What is Sandos order for tomorrow?
 # Sample answer: "Sandos gets 30 mini dutch, 12 french sticks, and 2 bags of brioche buns tomorrow"
@@ -78,7 +80,6 @@ def whoGetOrderTime(df, quantity, product, time):
 
     if not response:
         response = 'no one gets ' + quantity + ' ' + product + ' ' + time
-    
    
     return response
 
@@ -94,6 +95,36 @@ def getQuantityOrderTime(df, product, customer, time):
     else:
         # Get the first element of series 
         response = customer + ' gets ' + table['Quantity'].iloc[0]  + ' ' + product + ' ' + time
+    return response
+
+# Decides which function does the query maps to
+def classifyQuery(query, data, customers, products):
+    customer, time, product, quantity = '', '', '', ''
+    response = ''
+    times = ['today', 'yesterday']
+    
+    words = query.split()
+    for word in words:
+        if word in customers:
+            customer = word
+        elif word in products:
+            product = word
+        elif word in time:
+            time = word
+        elif word.isnumeric():
+            quantity = word
+    
+    if customer and time and product:
+        response = getQuantityOrderTime(data, product, customer, time)
+    elif time and product and quantity:
+        response = whoGetOrderTime(data, quantity, product, time)
+    elif time and product:
+        response = makeOrderTime(data, product, time)
+    elif customer and time:
+        response = customerOrderTime(data, customer, time)
+    else:
+        response = "Sorry I don't recognize this question, please ask another one"
+
     return response
 
 if __name__ == '__main__':
