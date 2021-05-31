@@ -19,9 +19,9 @@ def main():
                 continue
             if 'goodbye' in text:
                 break
-            print('You said', text)
             query = text.lower()
             query = normalizedQuery(query)
+            print('Query is', text)
             print('Genrating response...')
             response = classifyQuery(query, data, customers, products)
             print('Response', response)
