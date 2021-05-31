@@ -1,38 +1,34 @@
-# import aiy.voice.tts
-# from aiy.board import Board
-# from aiy.cloudspeech import CloudSpeechClient
-
+import aiy.voice.tts
+from aiy.board import Board
+from aiy.cloudspeech import CloudSpeechClient
+from nltk.stem import PorterStemmer
 from data import getDataAndHint
 
 def main():
     print('Retrieving the data')
     data, hints, customers, products = getDataAndHint()
     print('Data loaded')
-    
-    # response = customerOrderTime(data, 'ascendo los osos', 'today')
-    # response = makeOrderTime(data, 'blueberry muffin', 'today')
-    # response = whoGetOrderTime(data, '6', 'baguette', 'today')
-    # response = getQuantityOrderTime(data, 'dutch stick', 'bpb extras', 'today')
 
-    # client = CloudSpeechClient()
-    # with Board() as board:
-    #     while True:
-    #         print('Say something or repeat after me or bye')
-    #         text = client.recognize(hint_phrases=hints)
-    #         if text is None:
-    #             print('You said nothing.')
-    #             continue
-    #         if 'goodbye' in text:
-    #             break
-    #         print('You said', text)
-    #         query = text.lower()
-    #         print('Genrating response...')
-    #         response = classifyQuery(query, data, customers, products)
-    #         print('Response', response)
-    #         aiy.voice.tts.say(response)
+    client = CloudSpeechClient()
+    with Board() as board:
+        while True:
+            print('Say something or repeat after me or bye')
+            text = client.recognize(hint_phrases=hints)
+            if text is None:
+                print('You said nothing.')
+                continue
+            if 'goodbye' in text:
+                break
+            print('You said', text)
+            query = text.lower()
+            query = normalizedQuery(query)
+            print('Genrating response...')
+            response = classifyQuery(query, data, customers, products)
+            print('Response', response)
+            aiy.voice.tts.say(response)
 
-# Sample question: What is Sandos order for tomorrow?
-# Sample answer: "Sandos gets 30 mini dutch, 12 french sticks, and 2 bags of brioche buns tomorrow"
+# Sample question: what is scout order for tomorrow?
+# Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow
 def customerOrderTime(df, customer, time):
     # Get the result based on customer and time
     filter = (df['Dayref'] == time) & (df['Customer'] == customer)
@@ -67,7 +63,7 @@ def makeOrderTime(df, product, time):
 
     return response
 
-# Sample question: "Who gets 10 croissants today"
+# Sample question: "Who gets 10 plain croissants today"
 # Sample Answer: "Sally Loos gets 10 croissants today and Kreuzberg gets 10 croissants today"
 def whoGetOrderTime(df, quantity, product, time):
     filter = (df['Dayref'] == time) & (df['Product'] == product) & (df['Quantity'] == quantity)
@@ -76,7 +72,7 @@ def whoGetOrderTime(df, quantity, product, time):
     response = ''
     for ind in table.index:
         response += table['Customer'][ind] + ' gets ' + table['Quantity'][ind] +  \
-            ' ' + table['Product'][ind] + ' ' + table['Dayref'][ind]
+            ' ' + table['Product'][ind] + ' ' + table['Dayref'][ind] + ' '
 
     if not response:
         response = 'no one gets ' + quantity + ' ' + product + ' ' + time
@@ -97,30 +93,56 @@ def getQuantityOrderTime(df, product, customer, time):
         response = customer + ' gets ' + table['Quantity'].iloc[0]  + ' ' + product + ' ' + time
     return response
 
+def normalizedQuery(query):
+    ps = PorterStemmer()
+    # Stemming query
+    stemmedQuery = [ps.stem(word) for word in query.split()]
+    # Reconstruct query
+    query = ' '.join(stemmedQuery)
+    return query
+
 # Decides which function does the query maps to
 def classifyQuery(query, data, customers, products):
     customer, time, product, quantity = '', '', '', ''
     response = ''
-    times = ['today', 'yesterday']
+    times = ['today', 'tomorrow']
+
+    # Check if customer exist
+    for c in customers:
+        if c in query:
+            customer = c
+            break
     
+    # Check if product exist
+    for p in products:
+        if p in query:
+            product = p
+            break
+
+    # Check if time exist
+    for t in times:
+        if t in query:
+            time = t
+            break
+    
+    # Check if quantity exist:
     words = query.split()
     for word in words:
-        if word in customers:
-            customer = word
-        elif word in products:
-            product = word
-        elif word in time:
-            time = word
-        elif word.isnumeric():
+        if word.isnumeric():
             quantity = word
-    
+            break
+
     if customer and time and product:
+        print('Call getQuantityOrderTime')
         response = getQuantityOrderTime(data, product, customer, time)
     elif time and product and quantity:
+        print('Call whoGetOrderTime')
         response = whoGetOrderTime(data, quantity, product, time)
     elif time and product:
+        print('Call makeOrderTime')
         response = makeOrderTime(data, product, time)
     elif customer and time:
+        print('Call customerOrderTime')
         response = customerOrderTime(data, customer, time)
     else:
         response = "Sorry I don't recognize this question, please ask another one"
