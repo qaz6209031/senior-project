@@ -46,16 +46,14 @@ def customerOrderTime(customer, time):
     return response
 
 
-# Sample question: "What are morning bun orders for tomorrow"
-# Sample Answer: "Tomorrow bun orders are Scout 30 Linnaea's 4 Kreuzberg 10 Kraken 12 Coastal Peaks 6"
+# Q: "what is mini croissant order for tomorrow"
+# A: "tomorrow mini croissant orders are scout 2 with 45 orders and scout with 15 orders"
 def makeOrderTime(product, time):
-    # Get the result based on customer and time
+    # Get the result based on customer and times
     filter = (DATA['Dayref'] == time) & (DATA['Product'] == product)
     table = DATA.loc[filter]
 
-    response = ''
-    for ind in table.index:
-        response += table['Customer'][ind] + ' ' + table['Quantity'][ind] + ' '
+    response = ' and '.join([table['Customer'][ind] + ' with ' + table['Quantity'][ind] + ' orders' for ind in table.index])
     if not response:
         response = 'nothing'
 
