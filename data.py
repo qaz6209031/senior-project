@@ -10,7 +10,7 @@ import re
 DATA_SOURCE = 'https://bit.ly/3wGaAA0'
 
 def getDataAndHint():
-   db, hints = [], set()
+   db, hints, customers, products  = [], set(), set(), set()
    try:
       page = requests.get(DATA_SOURCE)
    except requests.exceptions.RequestException as err:
@@ -35,10 +35,12 @@ def getDataAndHint():
          dayref = np.nan
       
       hints.update([route, product, customer])
+      customers.add(customer)
+      products.add(product)
 
       db.append([date, quantity, route, product, customer, dayref])
 
    headers = ['Date', 'Quantity', 'Route', 'Product', 'Customer', 'Dayref']
    df = pd.DataFrame(db, columns = headers)
 
-   return df, hints 
+   return df, hints, customers, products
