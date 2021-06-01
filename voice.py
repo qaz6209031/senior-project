@@ -1,8 +1,8 @@
-import aiy.voice.tts
-from aiy.board import Board
-from aiy.cloudspeech import CloudSpeechClient
+# import aiy.voice.tts
+# from aiy.board import Board
+# from aiy.cloudspeech import CloudSpeechClient
 from nltk.stem import PorterStemmer
-from data import getDataAndHint
+from data import getData
 from difflib import SequenceMatcher
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
@@ -11,28 +11,29 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.naive_bayes import MultinomialNB
 
 print('Retrieving the data')
-DATA, HINTS, CUSTOMERS, PRODUCTS, TIMES, QUESTION_DF = getDataAndHint()
+DATA, HINTS, CUSTOMERS, PRODUCTS, TIMES, QUESTION_DF = getData()
 print('Data loaded')
 
 def main():
     # Train the intent classifier
     clf, count_vect = naive_algo()
+    print(QUESTION_DF.question)
    
-    client = CloudSpeechClient()
-    with Board() as board:
-        while True:
-            print('Say something or repeat after me or bye')
-            query = client.recognize(hint_phrases = HINTS)
-            if query is None:
-                print('You said nothing.')
-                continue
-            if 'goodbye' in query:
-                break
-            print('Query is', query.lower())
-            print('Genrating response...')
-            response = mapToFunction(query, clf, count_vect)
-            print('Response', response)
-            aiy.voice.tts.say(response)
+    # client = CloudSpeechClient()
+    # with Board() as board:
+    #     while True:
+    #         print('Say something or repeat after me or bye')
+    #         query = client.recognize(hint_phrases = HINTS)
+    #         if query is None:
+    #             print('You said nothing.')
+    #             continue
+    #         if 'goodbye' in query:
+    #             break
+    #         print('Query is', query.lower())
+    #         print('Genrating response...')
+    #         response = mapToFunction(query, clf, count_vect)
+    #         print('Response', response)
+    #         aiy.voice.tts.say(response)
 
 # Sample question: what is scout order for tomorrow?
 # Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow

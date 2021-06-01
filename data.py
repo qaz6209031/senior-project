@@ -9,7 +9,7 @@ import random
 
 DATA_SOURCE = 'https://bit.ly/3wGaAA0'
 
-def getDataAndHint():
+def getData():
    db, hints, customers, products  = [], set(), set(), set()
    times = ['today', 'tomorrow']
    try:
