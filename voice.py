@@ -26,13 +26,16 @@ def main():
             if query is None:
                 print('You said nothing.')
                 continue
+            query = query.lower()
             if 'goodbye' in query:
                 break
-            print('Query is', query.lower())
-            print('Genrating response...')
-            response = mapToFunction(query, clf, count_vect)
-            print('Response', response)
-            aiy.voice.tts.say(response)
+            if 'hey google' in query:
+                query = query.replace('hey google', '', 1).strip() 
+                print('Query is', query)
+                print('Genrating response...')
+                response = mapToFunction(query, clf, count_vect)
+                print('Response', response)
+                aiy.voice.tts.say(response)
 
 # Sample question: what is scout order for tomorrow?
 # Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow
