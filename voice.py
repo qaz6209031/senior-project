@@ -1,6 +1,6 @@
-import aiy.voice.tts
-from aiy.board import Board
-from aiy.cloudspeech import CloudSpeechClient
+# import aiy.voice.tts
+# from aiy.board import Board
+# from aiy.cloudspeech import CloudSpeechClient
 from nltk.stem import PorterStemmer
 from data import getData
 from difflib import SequenceMatcher
@@ -12,29 +12,31 @@ from sklearn.naive_bayes import MultinomialNB
 
 print('Retrieving the data')
 DATA, HINTS, CUSTOMERS, PRODUCTS, TIMES, QUESTION_DF = getData()
-# between 0 to 1, the higher the value is, the broader query it accept
-SIMILARITY = 0.85
 print('Data loaded')
 
 def main():
     # Train the intent classifier
     clf, count_vect = naive_algo()
-   
-    client = CloudSpeechClient()
-    with Board() as board:
-        while True:
-            print('Say something or repeat after me or bye')
-            query = client.recognize(hint_phrases = HINTS)
-            if query is None:
-                print('You said nothing.')
-                continue
-            if 'goodbye' in query:
-                break
-            print('Query is', query.lower())
-            print('Genrating response...')
-            response = mapToFunction(query, clf, count_vect)
-            print('Response', response)
-            aiy.voice.tts.say(response)
+
+    query = 'how many morning bun does acout gets today'
+    response = mapToFunction(query, clf, count_vect)
+    print(response)
+
+    # client = CloudSpeechClient()
+    # with Board() as board:
+    #     while True:
+    #         print('Say something or repeat after me or bye')
+    #         query = client.recognize(hint_phrases = HINTS)
+    #         if query is None:
+    #             print('You said nothing.')
+    #             continue
+    #         if 'goodbye' in query:
+    #             break
+    #         print('Query is', query.lower())
+    #         print('Genrating response...')
+    #         response = mapToFunction(query, clf, count_vect)
+    #         print('Response', response)
+    #         aiy.voice.tts.say(response)
 
 # Sample question: what is scout order for tomorrow?
 # Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow
@@ -138,9 +140,9 @@ def mapToFunction(rawQuery, clf, count_vect):
 # Extract entity from query, return in the order of customer, time, product, quantity
 def extractEntity(query):
     customer, time, product, quantity = '', '', '', ''
-    customer = containSimilarSubstring(query, CUSTOMERS)
-    product = containSimilarSubstring(query, PRODUCTS)
-    time = containSimilarSubstring(query, TIMES)
+    customer = containSimilarSubstring(query, CUSTOMERS, 0.85)
+    product = containSimilarSubstring(query, PRODUCTS, 0.85)
+    time = containSimilarSubstring(query, TIMES, 0.95)
     
     # Check if quantity exist:
     words = query.split()
@@ -172,12 +174,13 @@ def predict(question, clf, count_vect):
 def normalizedQuery(query):
     numbers = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', \
         'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen']
-    ps = PorterStemmer()
-    # Stemming query
-    stemmedQuery = [ps.stem(word) for word in query.split()]
-    # Reconstruct query
-    query = ' '.join(stemmedQuery)
 
+    # Stemming
+    # ps = PorterStemmer()
+    # stemmedQuery = [ps.stem(word) for word in query.split()]
+    # query = ' '.join(stemmedQuery)
+
+    # Replace number to real number such as one to 1
     for i in range(len(numbers)):
         query = query.replace(numbers[i], str(i + 1))
 
@@ -193,14 +196,15 @@ def ngrams(inp, n):
         output.append(inp[i:i+n])
     return output
 
-def containSimilarSubstring(query ,items):
+# Similarity factor is a number betwee 0 to 1, the bigger it is, the more accurate the entity is
+def containSimilarSubstring(query ,items, similarityFactor):
     # Check if product exist
     for i in items:
         # find the length of p
         length = len(i.split())
         ngramList = [' '.join(x) for x in ngrams(query, length)]
         for ngram in ngramList:
-            if similar(ngram, i) > SIMILARITY:
+            if similar(ngram, i) > similarityFactor:
                 return i
     return ''
     
