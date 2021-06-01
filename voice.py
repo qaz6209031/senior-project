@@ -38,6 +38,7 @@ def main():
 # Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow
 def customerOrder(query):
     customer, time, product, quantity = extractEntity(query)
+    print('Time: ', time, 'Customer: ', customer)
     if not time or not customer:
         return 'I do not understand, please ask me another question'
     # Get the result based on customer and time
@@ -59,6 +60,7 @@ def customerOrder(query):
 # A: "tomorrow mini croissant orders are scout 2 with 45 orders and scout with 15 orders"
 def productOrder(query):
     customer, time, product, quantity = extractEntity(query)
+    print('Time: ', time, 'Product ', product) 
     if not time or not product:
         return 'I do not understand, please ask me another question'
     # Get the result based on customer and times
@@ -77,6 +79,7 @@ def productOrder(query):
 # Sample Answer: "Sally Loos gets 10 croissants today and Kreuzberg gets 10 croissants today"
 def who(query):
     customer, time, product, quantity = extractEntity(query)
+    print('Time: ', time, 'Product: ', product, 'Quantity: ', quantity)
     if not time or not product or not quantity:
         return 'I do not understand, please ask me another question'
     filter = (DATA['Dayref'] == time) & (DATA['Product'] == product) & (DATA['Quantity'] == quantity)
@@ -96,6 +99,7 @@ def who(query):
 #Sample answer:  "Novo gets 10 baguettes today"
 def quantity(query):
     customer, time, product, quantity = extractEntity(query)
+    print('Time: ', time, 'Product: ', product, 'Customer: ', customer)
     if not time or not product or not customer:
         return 'I do not understand, please ask me another question'
     filter = (DATA['Dayref'] == time) & (DATA['Product'] == product) & (DATA['Customer'] == customer)

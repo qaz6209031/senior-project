@@ -44,6 +44,10 @@ def getDataAndHint():
    headers = ['Date', 'Quantity', 'Route', 'Product', 'Customer', 'Dayref']
    orderDF = pd.DataFrame(db, columns = headers)
 
+   # Add more hints
+   hints.update([str(i) for i in range(11)])
+   # Custom hint 
+   hints.update(['order'])
    # Generate questions
    questionsList = []
    # customerOrder intent questions
