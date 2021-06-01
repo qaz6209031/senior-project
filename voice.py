@@ -2,6 +2,7 @@ import aiy.voice.tts
 from aiy.board import Board
 from aiy.cloudspeech import CloudSpeechClient
 from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
 from data import getData
 from difflib import SequenceMatcher
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -175,6 +176,11 @@ def normalizedQuery(query):
     # ps = PorterStemmer()
     # stemmedQuery = [ps.stem(word) for word in query.split()]
     # query = ' '.join(stemmedQuery)
+
+    # Lemmatizing
+    lemmatizer = WordNetLemmatizer()
+    lemmatizedQuery = [lemmatizer.lemmatize(word) for word in query.split()]
+    query = ' '.join(lemmatizedQuery)
 
     # Replace number to real number such as one to 1
     for i in range(len(numbers)):
