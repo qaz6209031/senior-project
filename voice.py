@@ -4,33 +4,42 @@ from aiy.cloudspeech import CloudSpeechClient
 from nltk.stem import PorterStemmer
 from data import getDataAndHint
 from difflib import SequenceMatcher
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.naive_bayes import MultinomialNB
 
 print('Retrieving the data')
-DATA, HINTS, CUSTOMERS, PRODUCTS = getDataAndHint()
+DATA, HINTS, CUSTOMERS, PRODUCTS, TIMES, QUESTION_DF = getDataAndHint()
 print('Data loaded')
 
 def main():
+    # Train the intent classifier
+    clf, count_vect = naive_algo()
+   
     client = CloudSpeechClient()
     with Board() as board:
         while True:
             print('Say something or repeat after me or bye')
-            text = client.recognize(hint_phrases = HINTS)
-            if text is None:
+            query = client.recognize(hint_phrases = HINTS)
+            if query is None:
                 print('You said nothing.')
                 continue
-            if 'goodbye' in text:
+            if 'goodbye' in query:
                 break
-            query = text.lower()
-            query = normalizedQuery(query)
-            print('Query is', query)
+            print('Query is', query.lower())
             print('Genrating response...')
-            response = classifyQuery(query)
+            response = mapToFunction(query, clf, count_vect)
             print('Response', response)
             aiy.voice.tts.say(response)
 
 # Sample question: what is scout order for tomorrow?
 # Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow
-def customerOrderTime(customer, time):
+def customerOrder(query):
+    customer, time, product, quantity = extractEntity(query)
+    if not time or not customer:
+        return 'I do not understand, please ask me another question'
     # Get the result based on customer and time
     filter = (DATA['Dayref'] == time) & (DATA['Customer'] == customer)
     table = DATA.loc[filter]
@@ -48,7 +57,10 @@ def customerOrderTime(customer, time):
 
 # Q: "what is mini croissant order for tomorrow"
 # A: "tomorrow mini croissant orders are scout 2 with 45 orders and scout with 15 orders"
-def makeOrderTime(product, time):
+def productOrder(query):
+    customer, time, product, quantity = extractEntity(query)
+    if not time or not product:
+        return 'I do not understand, please ask me another question'
     # Get the result based on customer and times
     filter = (DATA['Dayref'] == time) & (DATA['Product'] == product)
     table = DATA.loc[filter]
@@ -63,7 +75,10 @@ def makeOrderTime(product, time):
 
 # Sample question: "Who gets 10 plain croissants today"
 # Sample Answer: "Sally Loos gets 10 croissants today and Kreuzberg gets 10 croissants today"
-def whoGetOrderTime(quantity, product, time):
+def who(query):
+    customer, time, product, quantity = extractEntity(query)
+    if not time or not product or not quantity:
+        return 'I do not understand, please ask me another question'
     filter = (DATA['Dayref'] == time) & (DATA['Product'] == product) & (DATA['Quantity'] == quantity)
     table = DATA.loc[filter]
     
@@ -79,7 +94,10 @@ def whoGetOrderTime(quantity, product, time):
 
 #Sample question:  "How many baguettes does Novo get today."
 #Sample answer:  "Novo gets 10 baguettes today"
-def getQuantityOrderTime(product, customer, time):
+def quantity(query):
+    customer, time, product, quantity = extractEntity(query)
+    if not time or not product or not customer:
+        return 'I do not understand, please ask me another question'
     filter = (DATA['Dayref'] == time) & (DATA['Product'] == product) & (DATA['Customer'] == customer)
     table = DATA.loc[filter]
 
@@ -120,48 +138,59 @@ def containSimilarSubstring(query ,items):
                 return i
     return ''
 
-
-# Decides which function does the query maps to
-def classifyQuery(query):
-    customer, time, product, quantity = '', '', '', ''
+# Map query to function
+def mapToFunction(rawQuery, clf, count_vect):
     response = ''
-    times = ['today', 'tomorrow']
+    query = rawQuery.lower()
+    res = predict(query, clf, count_vect)
+    query = normalizedQuery(query)
+    if res == 'customerOrder':
+        response = customerOrder(query)
+    elif res == 'productOrder':
+        response = productOrder(query)
+    elif res == 'who':
+        response = who(query)
+    elif res == 'quantity':
+        response = quantity(query)
+    return response
 
-    # Check if query contains string that similar to one of our product
+# Extract entity from query, return in the order of customer, time, product, quantity
+def extractEntity(query):
+    customer, time, product, quantity = '', '', '', ''
     customer = containSimilarSubstring(query, CUSTOMERS)
-
-    # Check if query contains string that similar to one of our product
     product = containSimilarSubstring(query, PRODUCTS)
-
     # Check if time exist
-    for t in times:
+    for t in TIMES:
         if t in query:
             time = t
             break
-    
+
     # Check if quantity exist:
     words = query.split()
     for word in words:
         if word.isnumeric():
             quantity = word
             break
+    
+    return customer, time, product, quantity
 
-    if customer and time and product:
-        print('Call getQuantityOrderTime')
-        response = getQuantityOrderTime(product, customer, time)
-    elif time and product and quantity:
-        print('Call whoGetOrderTime')
-        response = whoGetOrderTime(quantity, product, time)
-    elif time and product:
-        print('Call makeOrderTime')
-        response = makeOrderTime(product, time)
-    elif customer and time:
-        print('Call customerOrderTime')
-        response = customerOrderTime(customer, time)
-    else:
-        response = "Sorry I don't recognize this question, please ask another one"
+# Refer the concept from https://towardsdatascience.com/multi-label-intent-classification-1cdd4859b93
+def naive_algo():
+    tfidf = TfidfVectorizer(sublinear_tf=True, min_df=5, norm='l2', encoding='latin-1', ngram_range=(1, 2), stop_words='english')
+    features = tfidf.fit_transform(QUESTION_DF.question).toarray()
+    X_train, X_test, y_train, y_test = train_test_split(QUESTION_DF['question'], QUESTION_DF['class'], random_state = 0)
+    count_vect = CountVectorizer()
+    X_train_counts = count_vect.fit_transform(X_train)
+    tfidf_transformer = TfidfTransformer()
+    X_train_tfidf = tfidf_transformer.fit_transform(X_train_counts)
+    clf = MultinomialNB().fit(X_train_tfidf, y_train)
+    return clf,count_vect
 
-    return response
-
+def predict(question, clf, count_vect):
+    intent=clf.predict(count_vect.transform([question]))
+    intent=str(intent).strip("['']")
+    print('Intent is', intent)
+    return intent
+    
 if __name__ == '__main__':
     main()
