@@ -2,7 +2,6 @@ import aiy.voice.tts
 from aiy.board import Board
 from aiy.cloudspeech import CloudSpeechClient
 from nltk.stem import PorterStemmer
-from nltk.stem import WordNetLemmatizer
 from data import getData
 from difflib import SequenceMatcher
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -22,7 +21,7 @@ def main():
     client = CloudSpeechClient()
     with Board() as board:
         while True:
-            print('Say something or goodbye')
+            print('\nSay something or goodbye')
             query = client.recognize(hint_phrases = HINTS)
             if query is None:
                 print('You said nothing.')
@@ -178,9 +177,9 @@ def normalizedQuery(query):
     # query = ' '.join(stemmedQuery)
 
     # Lemmatizing
-    lemmatizer = WordNetLemmatizer()
-    lemmatizedQuery = [lemmatizer.lemmatize(word) for word in query.split()]
-    query = ' '.join(lemmatizedQuery)
+    # lemmatizer = WordNetLemmatizer()
+    # lemmatizedQuery = [lemmatizer.lemmatize(word) for word in query.split()]
+    # query = ' '.join(lemmatizedQuery)
 
     # Replace number to real number such as one to 1
     for i in range(len(numbers)):
