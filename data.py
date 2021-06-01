@@ -10,8 +10,8 @@ import random
 DATA_SOURCE = 'https://bit.ly/3wGaAA0'
 
 def getData():
-   db, hints, customers, products  = [], set(), set(), set()
-   times = ['today', 'tomorrow']
+   db, hints, customers, products, times  = [], set(), set(), set(), set()
+   
    try:
       page = requests.get(DATA_SOURCE)
    except requests.exceptions.RequestException as err:
@@ -33,11 +33,16 @@ def getData():
       dayref = datas[11].text.lower()
 
       if dayref == '#n/a':
-         dayref = np.nan
+         dayref = 'yesterday'
+
+      # means 2day 3day 4day 5day
+      if len(dayref) == 4:
+         dayref = dayref[0] + ' ' + dayref[1:] + ' after'
       
       hints.update([route, product, customer])
       customers.add(customer)
       products.add(product)
+      times.add(dayref)
 
       db.append([date, quantity, route, product, customer, dayref])
 
@@ -47,7 +52,7 @@ def getData():
    # Add more hints
    hints.update([str(i) for i in range(11)])
    # Custom hint 
-   hints.update(['order'])
+   hints.update(['order', 'for', 'after'])
    # Generate questions
    questionsList = []
    # customerOrder intent questions
@@ -102,11 +107,17 @@ def getData():
                for q in questions:
                   questionsList.append(['quantity', q])
                   count += 1
-      # stop generating question if we reach 450, so it is balanced with other questions
-      if(count >= 450):
-         break
 
    headers = ['class', 'question']
    questionDF = pd.DataFrame(questionsList, columns = headers)
 
+   # Randomly select 1200 rows for each class
+   q1 = questionDF.loc[questionDF['class'] == 'customerOrder'].sample(n = 1200)
+   q2 = questionDF.loc[questionDF['class'] == 'productOrder'].sample(n = 1200)
+   q3 = questionDF.loc[questionDF['class'] == 'who'].sample(n = 1200)
+   q4 = questionDF.loc[questionDF['class'] == 'quantity'].sample(n = 1200)
+   frames = [q1, q2 ,q3, q4]
+
+   questionDF = pd.concat(frames)
+   
    return orderDF, hints, customers, products, times, questionDF

@@ -1,6 +1,6 @@
-# import aiy.voice.tts
-# from aiy.board import Board
-# from aiy.cloudspeech import CloudSpeechClient
+import aiy.voice.tts
+from aiy.board import Board
+from aiy.cloudspeech import CloudSpeechClient
 from nltk.stem import PorterStemmer
 from data import getData
 from difflib import SequenceMatcher
@@ -12,32 +12,34 @@ from sklearn.naive_bayes import MultinomialNB
 
 print('Retrieving the data')
 DATA, HINTS, CUSTOMERS, PRODUCTS, TIMES, QUESTION_DF = getData()
+# between 0 to 1, the higher the value is, the broader query it accept
+SIMILARITY = 0.85
 print('Data loaded')
 
 def main():
     # Train the intent classifier
     clf, count_vect = naive_algo()
-    print(QUESTION_DF.question)
    
-    # client = CloudSpeechClient()
-    # with Board() as board:
-    #     while True:
-    #         print('Say something or repeat after me or bye')
-    #         query = client.recognize(hint_phrases = HINTS)
-    #         if query is None:
-    #             print('You said nothing.')
-    #             continue
-    #         if 'goodbye' in query:
-    #             break
-    #         print('Query is', query.lower())
-    #         print('Genrating response...')
-    #         response = mapToFunction(query, clf, count_vect)
-    #         print('Response', response)
-    #         aiy.voice.tts.say(response)
+    client = CloudSpeechClient()
+    with Board() as board:
+        while True:
+            print('Say something or repeat after me or bye')
+            query = client.recognize(hint_phrases = HINTS)
+            if query is None:
+                print('You said nothing.')
+                continue
+            if 'goodbye' in query:
+                break
+            print('Query is', query.lower())
+            print('Genrating response...')
+            response = mapToFunction(query, clf, count_vect)
+            print('Response', response)
+            aiy.voice.tts.say(response)
 
 # Sample question: what is scout order for tomorrow?
 # Sample answer: scout gets 0 country batard 15 mini croissant 8 ham and cheese croissant 6 chocolate croissant 21 morning bun tomorrow
 def customerOrder(query):
+    query = normalizedQuery(query)
     customer, time, product, quantity = extractEntity(query)
     print('Time: ', time, 'Customer: ', customer)
     if not time or not customer:
@@ -60,6 +62,7 @@ def customerOrder(query):
 # Q: "what is mini croissant order for tomorrow"
 # A: "tomorrow mini croissant orders are scout 2 with 45 orders and scout with 15 orders"
 def productOrder(query):
+    query = normalizedQuery(query)
     customer, time, product, quantity = extractEntity(query)
     print('Time: ', time, 'Product ', product) 
     if not time or not product:
@@ -79,6 +82,7 @@ def productOrder(query):
 # Sample question: "Who gets 10 plain croissants today"
 # Sample Answer: "Sally Loos gets 10 croissants today and Kreuzberg gets 10 croissants today"
 def who(query):
+    query = normalizedQuery(query)
     customer, time, product, quantity = extractEntity(query)
     print('Time: ', time, 'Product: ', product, 'Quantity: ', quantity)
     if not time or not product or not quantity:
@@ -99,6 +103,7 @@ def who(query):
 #Sample question:  "How many baguettes does Novo get today."
 #Sample answer:  "Novo gets 10 baguettes today"
 def quantity(query):
+    query = normalizedQuery(query)
     customer, time, product, quantity = extractEntity(query)
     print('Time: ', time, 'Product: ', product, 'Customer: ', customer)
     if not time or not product or not customer:
@@ -114,41 +119,12 @@ def quantity(query):
         response = customer + ' gets ' + table['Quantity'].iloc[0]  + ' ' + product + ' ' + time
     return response
 
-def normalizedQuery(query):
-    ps = PorterStemmer()
-    # Stemming query
-    stemmedQuery = [ps.stem(word) for word in query.split()]
-    # Reconstruct query
-    query = ' '.join(stemmedQuery)
-    return query
-
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
-
-def ngrams(inp, n):
-    inp = inp.split(' ')
-    output = []
-    for i in range(len(inp)-n+1):
-        output.append(inp[i:i+n])
-    return output
-
-def containSimilarSubstring(query ,items):
-    # Check if product exist
-    for i in items:
-        # find the length of p
-        length = len(i.split())
-        ngramList = [' '.join(x) for x in ngrams(query, length)]
-        for ngram in ngramList:
-            if similar(ngram, i) > 0.85:
-                return i
-    return ''
-
-# Map query to function
+# Map query to function (preidct the intent)
 def mapToFunction(rawQuery, clf, count_vect):
     response = ''
     query = rawQuery.lower()
     res = predict(query, clf, count_vect)
-    query = normalizedQuery(query)
+    
     if res == 'customerOrder':
         response = customerOrder(query)
     elif res == 'productOrder':
@@ -164,12 +140,8 @@ def extractEntity(query):
     customer, time, product, quantity = '', '', '', ''
     customer = containSimilarSubstring(query, CUSTOMERS)
     product = containSimilarSubstring(query, PRODUCTS)
-    # Check if time exist
-    for t in TIMES:
-        if t in query:
-            time = t
-            break
-
+    time = containSimilarSubstring(query, TIMES)
+    
     # Check if quantity exist:
     words = query.split()
     for word in words:
@@ -196,6 +168,41 @@ def predict(question, clf, count_vect):
     intent=str(intent).strip("['']")
     print('Intent is', intent)
     return intent
+
+def normalizedQuery(query):
+    numbers = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', \
+        'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen']
+    ps = PorterStemmer()
+    # Stemming query
+    stemmedQuery = [ps.stem(word) for word in query.split()]
+    # Reconstruct query
+    query = ' '.join(stemmedQuery)
+
+    for i in range(len(numbers)):
+        query = query.replace(numbers[i], str(i + 1))
+
+    return query
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+def ngrams(inp, n):
+    inp = inp.split(' ')
+    output = []
+    for i in range(len(inp)-n+1):
+        output.append(inp[i:i+n])
+    return output
+
+def containSimilarSubstring(query ,items):
+    # Check if product exist
+    for i in items:
+        # find the length of p
+        length = len(i.split())
+        ngramList = [' '.join(x) for x in ngrams(query, length)]
+        for ngram in ngramList:
+            if similar(ngram, i) > SIMILARITY:
+                return i
+    return ''
     
 if __name__ == '__main__':
     main()
