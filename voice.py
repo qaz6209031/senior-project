@@ -22,7 +22,10 @@ def main():
     with Board() as board:
         while True:
             print('\nSay something or goodbye')
+            print('Calling the API to get the query')
             query = client.recognize(hint_phrases = HINTS)
+            print('Finish calling the api')
+            
             if query is None:
                 print('You said nothing.')
                 continue

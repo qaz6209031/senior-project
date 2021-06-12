@@ -112,10 +112,11 @@ def getData():
    questionDF = pd.DataFrame(questionsList, columns = headers)
 
    # Randomly select 1200 rows for each class
-   q1 = questionDF.loc[questionDF['class'] == 'customerOrder'].sample(n = 1200)
-   q2 = questionDF.loc[questionDF['class'] == 'productOrder'].sample(n = 1200)
-   q3 = questionDF.loc[questionDF['class'] == 'who'].sample(n = 1200)
-   q4 = questionDF.loc[questionDF['class'] == 'quantity'].sample(n = 1200)
+   amount = 500
+   q1 = questionDF.loc[questionDF['class'] == 'customerOrder'].sample(n = 500)
+   q2 = questionDF.loc[questionDF['class'] == 'productOrder'].sample(n = 500)
+   q3 = questionDF.loc[questionDF['class'] == 'who'].sample(n = 500)
+   q4 = questionDF.loc[questionDF['class'] == 'quantity'].sample(n = 500)
    frames = [q1, q2 ,q3, q4]
 
    questionDF = pd.concat(frames)
